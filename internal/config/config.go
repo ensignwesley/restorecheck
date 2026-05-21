@@ -142,27 +142,13 @@ restic:
 
 temp:
   parent: /tmp
-  keep_on_failure: false
 
 assertions:
-  - name: sqlite database restores and opens
-    type: sqlite-integrity
-    path: /home/app/data/app.db
-
   - name: site index exists
     type: exists
     path: /home/app/site/public/index.html
 
-  - name: uploads directory is not empty
-    type: non-empty-dir
-    path: /home/app/data/uploads
-
   - name: config file is not empty
-    type: min-size
+    type: not-empty-file
     path: /home/app/data/config.json
-    bytes: 32
-
-  - name: custom app-specific check
-    type: command
-    command: ./scripts/validate-restore.sh "$RESTORE_ROOT"
 `

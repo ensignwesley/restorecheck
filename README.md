@@ -2,7 +2,7 @@
 
 Prove that a restic backup can become usable files again.
 
-Current status: foundation only. `restorecheck init` generates a starter config, and `restorecheck check-config` validates that restore drill description. Restore execution comes next.
+Current status: first restore pipeline. `restorecheck run` restores selected paths from a restic snapshot into a temporary directory, runs `exists` and `not-empty-file` assertions, then cleans up unless `--keep-workdir` is passed.
 
 ## Quick start
 
@@ -10,6 +10,7 @@ Current status: foundation only. `restorecheck init` generates a starter config,
 restorecheck init
 $EDITOR restorecheck.yml
 restorecheck check-config --config restorecheck.yml
+restorecheck run --config restorecheck.yml
 ```
 
 ## Sample config
@@ -22,37 +23,28 @@ restic:
   password_file: /etc/restic/password
   snapshot: latest
   paths:
-    - /home/app/data
-    - /home/app/site
+    - /home/app/data/config.json
+    - /home/app/site/public/index.html
 
 temp:
   parent: /tmp
-  keep_on_failure: false
 
 assertions:
-  - name: sqlite database restores and opens
-    type: sqlite-integrity
-    path: /home/app/data/app.db
-
   - name: site index exists
     type: exists
     path: /home/app/site/public/index.html
 
-  - name: uploads directory is not empty
-    type: non-empty-dir
-    path: /home/app/data/uploads
-
   - name: config file is not empty
-    type: min-size
+    type: not-empty-file
     path: /home/app/data/config.json
-    bytes: 32
-
-  - name: custom app-specific check
-    type: command
-    command: ./scripts/validate-restore.sh "$RESTORE_ROOT"
 ```
 
-Supported assertion types in the config parser:
+`restorecheck run` currently executes these assertion types:
+
+- `exists`
+- `not-empty-file`
+
+The config parser already recognizes the planned v1 assertion set:
 
 - `exists`
 - `not-empty-file`
@@ -60,3 +52,5 @@ Supported assertion types in the config parser:
 - `non-empty-dir`
 - `sqlite-integrity`
 - `command`
+
+Unsupported runner assertions currently fail with evidence instead of silently passing.
