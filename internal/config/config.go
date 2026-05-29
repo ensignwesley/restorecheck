@@ -12,6 +12,7 @@ import (
 var AllowedAssertionTypes = map[string]bool{
 	"exists":           true,
 	"not-empty-file":   true,
+	"matches-checksum": true,
 	"min-size":         true,
 	"non-empty-dir":    true,
 	"sqlite-integrity": true,
@@ -42,6 +43,7 @@ type Assertion struct {
 	Type    string `yaml:"type"`
 	Path    string `yaml:"path"`
 	Bytes   int64  `yaml:"bytes"`
+	Sha256  string `yaml:"sha256"`
 	Command string `yaml:"command"`
 }
 
@@ -108,6 +110,21 @@ func Validate(cfg *Config) error {
 			if strings.TrimSpace(a.Path) == "" {
 				problems = append(problems, prefix+".path is required for type "+a.Type)
 			}
+		case "matches-checksum":
+			if strings.TrimSpace(a.Path) == "" {
+				problems = append(problems, prefix+".path is required for type matches-checksum")
+			}
+			sha := strings.ToLower(strings.TrimSpace(a.Sha256))
+			if len(sha) != 64 {
+				problems = append(problems, prefix+".sha256 must be a 64-character hex digest for type matches-checksum")
+			} else {
+				for _, ch := range sha {
+					if !((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f')) {
+						problems = append(problems, prefix+".sha256 must be a 64-character hex digest for type matches-checksum")
+						break
+					}
+				}
+			}
 		case "min-size":
 			if strings.TrimSpace(a.Path) == "" {
 				problems = append(problems, prefix+".path is required for type min-size")
@@ -151,4 +168,9 @@ assertions:
   - name: config file is not empty
     type: not-empty-file
     path: /home/app/data/config.json
+
+  - name: config file has expected checksum
+    type: matches-checksum
+    path: /home/app/data/config.json
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 `

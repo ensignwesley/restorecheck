@@ -2,7 +2,10 @@ package runner
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -145,12 +148,42 @@ func RunAssertions(root string, assertions []config.Assertion) []AssertionResult
 				result.OK = true
 				result.Evidence = fmt.Sprintf("file exists and has %d bytes", info.Size())
 			}
+		case "matches-checksum":
+			actual, err := fileSHA256(full)
+			if err != nil {
+				if os.IsNotExist(err) {
+					result.Evidence = "file does not exist"
+				} else {
+					result.Evidence = err.Error()
+				}
+				break
+			}
+			expected := strings.ToLower(strings.TrimSpace(a.Sha256))
+			if actual == expected {
+				result.OK = true
+				result.Evidence = "sha256 matches " + actual
+			} else {
+				result.Evidence = fmt.Sprintf("sha256 mismatch: expected %s, got %s", expected, actual)
+			}
 		default:
 			result.Evidence = "assertion type not implemented by run yet"
 		}
 		results = append(results, result)
 	}
 	return results
+}
+
+func fileSHA256(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func RestoredPath(root, configured string) string {
