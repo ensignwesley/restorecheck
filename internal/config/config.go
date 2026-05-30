@@ -173,4 +173,13 @@ assertions:
     type: matches-checksum
     path: /home/app/data/config.json
     sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+  - name: uploads directory has restored content
+    type: non-empty-dir
+    path: /home/app/site/uploads
+
+  - name: database is at least 1 MiB
+    type: min-size
+    path: /home/app/data/app.db
+    bytes: 1048576
 `

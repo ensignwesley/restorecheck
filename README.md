@@ -42,6 +42,15 @@ assertions:
     type: matches-checksum
     path: /home/app/data/config.json
     sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+  - name: uploaded media directory has restored content
+    type: non-empty-dir
+    path: /home/app/uploads
+
+  - name: sqlite database is at least 1 MiB
+    type: min-size
+    path: /home/app/data/app.db
+    bytes: 1048576
 ```
 
 `restorecheck run` currently executes these assertion types:
@@ -49,6 +58,8 @@ assertions:
 - `exists`
 - `not-empty-file`
 - `matches-checksum` — verifies restored file SHA-256 against `sha256`
+- `min-size` — verifies a restored file is at least `bytes` bytes
+- `non-empty-dir` — verifies a restored directory contains at least one entry
 
 The config parser already recognizes the planned v1 assertion set:
 

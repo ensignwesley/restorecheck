@@ -165,6 +165,36 @@ func RunAssertions(root string, assertions []config.Assertion) []AssertionResult
 			} else {
 				result.Evidence = fmt.Sprintf("sha256 mismatch: expected %s, got %s", expected, actual)
 			}
+		case "min-size":
+			info, err := os.Stat(full)
+			if err != nil {
+				if os.IsNotExist(err) {
+					result.Evidence = "file does not exist"
+				} else {
+					result.Evidence = err.Error()
+				}
+			} else if info.IsDir() {
+				result.Evidence = "path is a directory"
+			} else if info.Size() < a.Bytes {
+				result.Evidence = fmt.Sprintf("file has %d bytes, below minimum %d", info.Size(), a.Bytes)
+			} else {
+				result.OK = true
+				result.Evidence = fmt.Sprintf("file has %d bytes, meeting minimum %d", info.Size(), a.Bytes)
+			}
+		case "non-empty-dir":
+			entries, err := os.ReadDir(full)
+			if err != nil {
+				if os.IsNotExist(err) {
+					result.Evidence = "directory does not exist"
+				} else {
+					result.Evidence = err.Error()
+				}
+			} else if len(entries) == 0 {
+				result.Evidence = "directory exists but is empty"
+			} else {
+				result.OK = true
+				result.Evidence = fmt.Sprintf("directory contains %d entries", len(entries))
+			}
 		default:
 			result.Evidence = "assertion type not implemented by run yet"
 		}

@@ -50,6 +50,45 @@ func TestRunAssertionsNonEmptyFileFailsForEmptyFile(t *testing.T) {
 	}
 }
 
+func TestRunAssertionsMinSizePassesAndFails(t *testing.T) {
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "home/app/data/file.txt"), "payload")
+	results := RunAssertions(root, []config.Assertion{
+		{Name: "file is large enough", Type: "min-size", Path: "/home/app/data/file.txt", Bytes: 7},
+		{Name: "file is too small", Type: "min-size", Path: "/home/app/data/file.txt", Bytes: 8},
+	})
+	if !results[0].OK {
+		t.Fatalf("first assertion failed, want pass: %#v", results[0])
+	}
+	if results[1].OK {
+		t.Fatalf("second assertion passed, want failure")
+	}
+	if want := "file has 7 bytes, below minimum 8"; results[1].Evidence != want {
+		t.Fatalf("evidence=%q, want %q", results[1].Evidence, want)
+	}
+}
+
+func TestRunAssertionsNonEmptyDirPassesAndFails(t *testing.T) {
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "home/app/data/full/file.txt"), "payload")
+	if err := os.MkdirAll(filepath.Join(root, "home/app/data/empty"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	results := RunAssertions(root, []config.Assertion{
+		{Name: "directory has entries", Type: "non-empty-dir", Path: "/home/app/data/full"},
+		{Name: "directory is empty", Type: "non-empty-dir", Path: "/home/app/data/empty"},
+	})
+	if !results[0].OK {
+		t.Fatalf("first assertion failed, want pass: %#v", results[0])
+	}
+	if results[1].OK {
+		t.Fatalf("second assertion passed, want failure")
+	}
+	if results[1].Evidence != "directory exists but is empty" {
+		t.Fatalf("evidence=%q", results[1].Evidence)
+	}
+}
+
 func TestRestoredPathTreatsAbsoluteConfigPathAsRestoreRelative(t *testing.T) {
 	got := RestoredPath("/tmp/restore", "/home/app/data/file.txt")
 	want := "/tmp/restore/home/app/data/file.txt"
