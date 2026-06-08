@@ -2,7 +2,9 @@
 
 Prove that a restic backup can become usable files again.
 
-Current status: first restore pipeline. `restorecheck run` restores selected paths from a restic snapshot into a temporary directory, runs basic file assertions, then cleans up unless `--keep-workdir` is passed.
+`restorecheck run` restores selected paths from a restic snapshot into a temporary directory, runs file and directory assertions, reports evidence, then cleans up unless `--keep-workdir` is passed. Backup monitoring should prove restores, not just successful backup commands.
+
+Current status: working restore pipeline with config validation, checksum/min-size/non-empty-dir assertions, and test coverage for parser + runner behavior.
 
 ## Quick start
 
@@ -72,3 +74,11 @@ The config parser already recognizes the planned v1 assertion set:
 - `command`
 
 Unsupported runner assertions currently fail with evidence instead of silently passing.
+
+## Verification
+
+```bash
+go test ./...
+```
+
+The test suite covers config parsing and runner assertion behavior. For production use, point the sample config at a real restic repository and run `restorecheck run --config restorecheck.yml` from the host that can read the repository/password file.
