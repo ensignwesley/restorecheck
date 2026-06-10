@@ -89,6 +89,33 @@ func TestRunAssertionsNonEmptyDirPassesAndFails(t *testing.T) {
 	}
 }
 
+func TestRunAssertionsCommandReceivesRestoreRoot(t *testing.T) {
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "home/app/data/file.txt"), "payload")
+	results := RunAssertions(root, []config.Assertion{
+		{Name: "custom validator", Type: "command", Command: `test -s "$RESTORE_ROOT/home/app/data/file.txt" && printf validated`},
+	})
+	if !results[0].OK {
+		t.Fatalf("command assertion failed, want pass: %#v", results[0])
+	}
+	if results[0].Evidence != "command exited 0: validated" {
+		t.Fatalf("evidence=%q", results[0].Evidence)
+	}
+}
+
+func TestRunAssertionsCommandReportsFailure(t *testing.T) {
+	root := t.TempDir()
+	results := RunAssertions(root, []config.Assertion{
+		{Name: "custom validator", Type: "command", Command: `echo broken; exit 7`},
+	})
+	if results[0].OK {
+		t.Fatalf("command assertion passed, want failure")
+	}
+	if want := "command failed: exit status 7; output: broken"; results[0].Evidence != want {
+		t.Fatalf("evidence=%q, want %q", results[0].Evidence, want)
+	}
+}
+
 func TestRestoredPathTreatsAbsoluteConfigPathAsRestoreRelative(t *testing.T) {
 	got := RestoredPath("/tmp/restore", "/home/app/data/file.txt")
 	want := "/tmp/restore/home/app/data/file.txt"

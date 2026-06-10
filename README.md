@@ -2,9 +2,9 @@
 
 Prove that a restic backup can become usable files again.
 
-`restorecheck run` restores selected paths from a restic snapshot into a temporary directory, runs file and directory assertions, reports evidence, then cleans up unless `--keep-workdir` is passed. Backup monitoring should prove restores, not just successful backup commands.
+`restorecheck run` restores selected paths from a restic snapshot into a temporary directory, runs file, directory, checksum, and custom command assertions, reports evidence, then cleans up unless `--keep-workdir` is passed. Backup monitoring should prove restores, not just successful backup commands.
 
-Current status: working restore pipeline with config validation, checksum/min-size/non-empty-dir assertions, and test coverage for parser + runner behavior.
+Current status: working restore pipeline with config validation, checksum/min-size/non-empty-dir assertions, custom command assertions, and test coverage for parser + runner behavior.
 
 ## Quick start
 
@@ -53,6 +53,10 @@ assertions:
     type: min-size
     path: /home/app/data/app.db
     bytes: 1048576
+
+  - name: app-specific restore validator passes
+    type: command
+    command: ./validate-restore.sh "$RESTORE_ROOT"
 ```
 
 `restorecheck run` currently executes these assertion types:
@@ -62,18 +66,9 @@ assertions:
 - `matches-checksum` — verifies restored file SHA-256 against `sha256`
 - `min-size` — verifies a restored file is at least `bytes` bytes
 - `non-empty-dir` — verifies a restored directory contains at least one entry
+- `command` — runs a shell command from the restore root with `RESTORE_ROOT` set to the temporary restore directory
 
-The config parser already recognizes the planned v1 assertion set:
-
-- `exists`
-- `not-empty-file`
-- `matches-checksum`
-- `min-size`
-- `non-empty-dir`
-- `sqlite-integrity`
-- `command`
-
-Unsupported runner assertions currently fail with evidence instead of silently passing.
+The config parser also recognizes the planned `sqlite-integrity` assertion. Unsupported runner assertions currently fail with evidence instead of silently passing.
 
 ## Verification
 

@@ -182,4 +182,8 @@ assertions:
     type: min-size
     path: /home/app/data/app.db
     bytes: 1048576
+
+  - name: app-specific validator passes
+    type: command
+    command: ./validate-restore.sh "$RESTORE_ROOT"
 `

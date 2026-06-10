@@ -195,6 +195,26 @@ func RunAssertions(root string, assertions []config.Assertion) []AssertionResult
 				result.OK = true
 				result.Evidence = fmt.Sprintf("directory contains %d entries", len(entries))
 			}
+		case "command":
+			cmd := exec.Command("sh", "-c", a.Command)
+			cmd.Dir = root
+			cmd.Env = append(os.Environ(), "RESTORE_ROOT="+root)
+			out, err := cmd.CombinedOutput()
+			trimmed := strings.TrimSpace(string(out))
+			if err != nil {
+				if trimmed == "" {
+					result.Evidence = err.Error()
+				} else {
+					result.Evidence = fmt.Sprintf("command failed: %v; output: %s", err, trimmed)
+				}
+			} else {
+				result.OK = true
+				if trimmed == "" {
+					result.Evidence = "command exited 0"
+				} else {
+					result.Evidence = "command exited 0: " + trimmed
+				}
+			}
 		default:
 			result.Evidence = "assertion type not implemented by run yet"
 		}
